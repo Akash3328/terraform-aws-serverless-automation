@@ -1,12 +1,20 @@
 import os
 import logging
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger()
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
-rds_client = boto3.client("rds")
+boto_config = Config(
+    retries={
+        "max_attempts": 5,
+        "mode": "standard",
+    }
+)
+
+rds_client = boto3.client("rds", config=boto_config)
 
 DB_INSTANCE_IDENTIFIER = os.environ["DB_INSTANCE_IDENTIFIER"]
 def lambda_handler(event, context):
@@ -34,8 +42,12 @@ def lambda_handler(event, context):
             rds_client.start_db_instance(DBInstanceIdentifier=DB_INSTANCE_IDENTIFIER)
             logger.info(f"Start initiated for {DB_INSTANCE_IDENTIFIER}")
         else:
+            # This branch is what makes duplicate/retried invocations safe:
+            # if the instance is already mid-transition or in the target
+            # state, we deliberately no-op instead of erroring or retrying.
             logger.warning(
-                f"No action taken. switch={switch}, current_state={current_state}"
+                f"No action taken (idempotent no-op). "
+                f"switch={switch}, current_state={current_state}"
             )
     except rds_client.exceptions.InvalidDBInstanceStateFault as e:
         logger.warning(f"DB instance in a non-actionable state: {e}")
