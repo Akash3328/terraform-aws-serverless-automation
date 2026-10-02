@@ -36,7 +36,7 @@ data "aws_iam_policy_document" "rds_access" {
     ]
 
     resources = [
-      "arn:aws:rds:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:db:${var.db_instance_identifier}"
+      "arn:aws:rds:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:db:${var.db_instance_identifier}"
     ]
   }
 }
