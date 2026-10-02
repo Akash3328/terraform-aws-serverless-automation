@@ -12,3 +12,8 @@ import {
   to = aws_lambda_function.rds_scheduler
   id = "rds-scheduler"
 }
+
+import {
+  to = aws_cloudwatch_log_group.rds_scheduler
+  id = "/aws/lambda/rds-scheduler"
+}
